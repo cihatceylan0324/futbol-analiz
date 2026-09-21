@@ -5,33 +5,42 @@ import glob
 # Sayfa Ayarları
 st.set_page_config(page_title="Futbol Maç ve Oran Arşivi", page_icon="⚽", layout="wide")
 
-st.title("⚽ 22 Lig - Kapsamlı Maç ve Oran Analiz Paneli")
-st.markdown("Bu panel, seçtiğin ligin **ilk yarı ve maç sonu tüm oranlarını** ve maç detaylarını listeler.")
+st.title("⚽ 22 Lig - Maç ve Oran Analiz Paneli")
 
 # Klasördeki CSV dosyalarını bul
 dosyalar = glob.glob("*_HizliArsiv_*.csv")
+if not dosyalar:
+    dosyalar = glob.glob("*.csv")
 
 if not dosyalar:
-    st.warning("⚠️ Klasörde hiç CSV dosyası bulunamadı! Lig dosyalarının bu klasörde olduğundan emin ol.")
+    st.warning("⚠️ Hiç CSV dosyası bulunamadı! Lütfen CSV dosyalarının oran-analiz deposuna yüklendiğinden emin ol.")
 else:
     # Sol Menüden Lig Seçimi
-    st.sidebar.header("⚙️ Lig ve Filtreleme")
+    st.sidebar.header("⚙️ Lig Seçimi")
     secilen_dosya = st.sidebar.selectbox("Görüntülenecek Ligi Seçin", dosyalar)
     
     # Dosyayı Oku
     df = pd.read_csv(secilen_dosya)
     
-    st.success(f"📂 Seçilen Lig Dosyası: {secilen_dosya} | Toplam Maç Sayısı: {len(df)}")
+    st.success(f"📂 Seçilen Lig: {secilen_dosya.split('_')[0]} | Toplam Maç: {len(df)}")
     
-    # Oran kolonlarını akıllıca bulup öne çıkarma veya direkt tüm tabloyu gösterme
-    with st.expander("📊 Tüm Verileri ve Oranları Tabloda Gör (Genişlet)", expanded=True):
-        st.dataframe(df, use_container_width=True)
+    # Takım Arama Alanı
+    st.sidebar.subheader("🔍 Takım Ara")
+    aranan_takim = st.sidebar.text_input("Ev Sahibi veya Deplasman Ara:")
+    
+    if aranan_takim:
+        df = df[df['Ev Sahibi'].str.contains(aranan_takim, case=False, na=False) | 
+                df['Deplasman'].str.contains(aranan_takim, case=False, na=False)]
+    
+    # Tabloyu Göster
+    st.subheader("📊 Maç Listesi ve Sonuçları")
+    st.dataframe(df, use_container_width=True)
         
     # İndirme Butonu
     csv_veri = df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="📥 Bu Ligin Oranlı Verilerini İndir (CSV)",
+        label="📥 Bu Ligin Verilerini İndir (CSV)",
         data=csv_veri,
-        file_name=f"oranli_{secilen_dosya}",
+        file_name=f"filtrelenmis_{secilen_dosya}",
         mime="text/csv",
     )
